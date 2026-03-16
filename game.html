@@ -3,21 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game</title>
+    <title>3D Monkey Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the Game!</h1>
-    <label for="gameSize">Select game size:</label>
-    <select id="gameSize">
-        <option value="small">Small</option>
-        <option value="medium">Medium</option>
-        <option value="large">Large</option>
-    </select>
+    <canvas id="gameCanvas"></canvas>
     <script>
-        const sizeSelect = document.getElementById('gameSize');
-        sizeSelect.addEventListener('change', (event) => {
-            console.log('Selected game size:', event.target.value);
+        const canvas = document.getElementById('gameCanvas');
+        const context = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Game settings
+        let score = 0;
+        let monkey = { x: canvas.width / 2, y: canvas.height - 20, width: 50, height: 50, isJumping: false, velocityY: 0 };
+        let bananas = [];
+
+        // Handle controls
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft') { monkey.x -= 5; }
+            if (event.key === 'ArrowRight') { monkey.x += 5; }
+            if (event.key === ' ') { if (!monkey.isJumping) { monkey.isJumping = true; monkey.velocityY = -15; } }
         });
+
+        // Game loop
+        function gameLoop() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw monkey
+            context.fillStyle = 'brown';
+            context.fillRect(monkey.x, monkey.y, monkey.width, monkey.height);
+
+            // Handle jumping
+            if (monkey.isJumping) {
+                monkey.y += monkey.velocityY;
+                monkey.velocityY += 0.5;
+                if (monkey.y >= canvas.height - 20) {
+                    monkey.y = canvas.height - 20;
+                    monkey.isJumping = false;
+                }
+            }
+
+            // Spawn bananas
+            if (Math.random() < 0.02) {
+                bananas.push({ x: Math.random() * canvas.width, y: 0, width: 30, height: 30 });
+            }
+
+            // Draw bananas
+            for (let i = 0; i < bananas.length; i++) {
+                context.fillStyle = 'yellow';
+                context.fillRect(bananas[i].x, bananas[i].y, bananas[i].width, bananas[i].height);
+                bananas[i].y += 3; // Move bananas down
+                // Check for collision
+                if (bananas[i].y + bananas[i].height > monkey.y && bananas[i].x < monkey.x + monkey.width && bananas[i].x + bananas[i].width > monkey.x) {
+                    score++;
+                    bananas.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Draw score
+            context.fillStyle = 'black';
+            context.font = '20px Arial';
+            context.fillText('Score: ' + score, 10, 20);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop(); // Start the game
     </script>
 </body>
 </html>
