@@ -1,126 +1,23 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Monkey's Jump</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-text-align:center;
-background:#c8f7c5;
-}
-
-h1{
-margin:10px;
-}
-
-#game{
-position:relative;
-width:400px;
-height:500px;
-margin:auto;
-background:#87CEEB;
-overflow:hidden;
-border:4px solid black;
-}
-
-#monkey{
-position:absolute;
-bottom:0;
-left:170px;
-font-size:50px;
-}
-
-.banana{
-position:absolute;
-top:0;
-font-size:35px;
-cursor:pointer;
-}
-
-#score{
-font-size:22px;
-margin:10px;
-}
-
-button{
-padding:10px 20px;
-font-size:18px;
-margin:10px;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
 </head>
-
 <body>
-
-<h1>🐵 Monkey's Jump</h1>
-
-<div id="score">Score : 0</div>
-
-<div id="game">
-<div id="monkey">🐵</div>
-</div>
-
-<button onclick="jump()">SAUTER</button>
-
-<script>
-
-let score = 0
-let monkey = document.getElementById("monkey")
-let game = document.getElementById("game")
-
-function jump(){
-
-monkey.style.bottom = "120px"
-
-setTimeout(()=>{
-monkey.style.bottom = "0px"
-},400)
-
-}
-
-function createBanana(){
-
-let banana = document.createElement("div")
-banana.classList.add("banana")
-banana.innerHTML = "🍌"
-
-banana.style.left = Math.random()*360 + "px"
-
-game.appendChild(banana)
-
-let fall = setInterval(()=>{
-
-banana.style.top = banana.offsetTop + 5 + "px"
-
-if(banana.offsetTop > 460){
-
-let monkeyLeft = monkey.offsetLeft
-let bananaLeft = banana.offsetLeft
-
-if(Math.abs(monkeyLeft - bananaLeft) < 50 && monkey.style.bottom != "0px"){
-
-score++
-document.getElementById("score").innerHTML = "Score : " + score
-
-}
-
-banana.remove()
-clearInterval(fall)
-
-}
-
-},40)
-
-}
-
-setInterval(createBanana,1200)
-
-</script>
-
+    <h1>Welcome to the Game!</h1>
+    <label for="gameSize">Select game size:</label>
+    <select id="gameSize">
+        <option value="small">Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+    </select>
+    <script>
+        const sizeSelect = document.getElementById('gameSize');
+        sizeSelect.addEventListener('change', (event) => {
+            console.log('Selected game size:', event.target.value);
+        });
+    </script>
 </body>
 </html>
