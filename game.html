@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monkey's Jump 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-dark: #1a1a2e;
+    --bg-medium: #2a2a4a;
+    --bg-light: #3a3a60;
+    --primary-color: #00ff9c;
+    --secondary-color: #ff6b6b;
+    --text-color: #e0e0e0;
+    --border-color: #4a4a7a;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+body {
+    font-family: 'Fredoka One', Arial, sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, var(--bg-dark), #000000);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px; /* For a subtle 3D body effect */
+}
+
+h1 {
+    font-family: 'Press Start 2P', cursive;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    text-shadow: 3px 3px var(--secondary-color);
+    font-size: 2.5em;
+}
+
+#app-container {
+    background: var(--bg-medium);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    padding: 30px;
+    margin-top: 20px;
+    width: 90%;
+    max-width: 1000px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    transform: rotateX(5deg) scale(0.95); /* Subtle 3D tilt */
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease-out;
+}
+
+#app-container:hover {
+    transform: rotateX(0deg) scale(1);
+}
+
+.section {
+    background: var(--bg-light);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3), 0 5px 15px var(--shadow-color);
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transform: translateZ(10px); /* Lift sections slightly in 3D space */
+}
+
+.section h2 {
+    font-family: 'Press Start 2P', cursive;
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-shadow: 2px 2px var(--secondary-color);
+}
+
+/* Game Area */
+#game-section {
+    min-width: 400px;
+    max-width: 600px;
+    flex: 2;
+}
+
+#gameArea {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    margin: auto;
+    background: linear-gradient(to bottom, #87ceeb, #6495ed); /* Sky */
+    overflow: hidden;
+    border-radius: 10px;
+    border: 3px solid var(--border-color);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+    transform-style: preserve-3d; /* Enable 3D children */
+}
+
+/* Landscape background elements */
+.landscape-layer {
+    position: absolute;
+    bottom: 0;
+    width: 200%; /* Double width for seamless scrolling */
+    height: 100%;
+    background-repeat: repeat-x;
+    animation: moveBackground linear infinite;
+}
+
+#mountains {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50" preserveAspectRatio="none"><path fill="%234A708B" d="M0,50 L10,15 L25,40 L35,10 L50,30 L65,5 L80,35 L90,20 L100,50 Z" /></svg>');
+    height: 70%;
+    bottom: 20px;
+    opacity: 0.7;
+    animation-duration: 30s;
+    transform: translateZ(-50px);
+    background-size: 100px 100%; /* Scale the SVG texture */
+}
+
+#trees {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50" preserveAspectRatio="none"><path fill="%23228B22" d="M0,50 Q10,20 20,50 M25,50 Q35,10 45,50 M50,50 Q60,30 70,50 M75,50 Q85,0 95,50 Z" /></svg>');
+    height: 50%;
+    bottom: 0;
+    animation-duration: 15s;
+    transform: translateZ(-20px);
+    background-size: 80px 100%;
+}
+
+#road {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background-color: #555;
+    border-top: 5px dashed var(--text-color);
+    box-sizing: border-box;
+    z-index: 1;
+    transform: translateZ(0);
+}
+
+@keyframes moveBackground {
+    from { transform: translateX(0) translateZ(var(--z-index-offset, 0)); }
+    to { transform: translateX(-50%) translateZ(var(--z-index-offset, 0)); }
+}
+
+#monkey {
+    position: absolute;
+    bottom: 40px; /* On the road */
+    left: 50px;
+    font-size: 50px;
+    transition: bottom 0.15s ease-out; /* Smooth jump animation */
+    z-index: 10;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    transform: translateZ(20px); /* Brings monkey forward */
+}
+
+#monkey.jump {
+    bottom: 120px; /* Peak of jump */
+}
+
+.obstacle {
+    position: absolute;
+    bottom: 40px; /* On the road */
+    right: -60px; /* Start off-screen */
+    font-size: 45px;
+    z-index: 9;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    transform: translateZ(15px); /* Slightly behind monkey */
+}
+
+/* Game Controls & Info */
+.game-controls, .balance-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#multiplier {
+    font-size: 2.2em;
+    color: var(--primary-color);
+    text-shadow: 2px 2px var(--shadow-color);
+    margin-top: 10px;
+}
+
+input[type="number"], input[type="text"], select {
+    padding: 12px;
+    font-size: 1em;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+    margin-bottom: 10px;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+}
+
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0,255,156,0.3);
+}
+
+button {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: var(--primary-color);
+    color: var(--bg-dark);
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+    transform: translateZ(5px); /* Lift button in 3D */
+}
+
+button:hover {
+    background-color: #00e687;
+    transform: translateY(-2px) translateZ(10px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+button:active {
+    transform: translateY(0) translateZ(5px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+
+button.secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+button.secondary:hover {
+    background-color: #e65c5c;
+}
+
+#balance {
+    font-size: 1.8em;
+    color: var(--primary-color);
+    margin-top: 10px;
+    text-shadow: 1px 1px 3px var(--shadow-color);
+}
+
+#message {
+    font-size: 1.2em;
+    margin-top: 10px;
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.transaction-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.transaction-form label {
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.8em;
+    }
+    #app-container {
+        padding: 20px;
+        flex-direction: column;
+        transform: rotateX(0deg) scale(1);
+    }
+    .section {
+        min-width: unset;
+        width: 100%;
+    }
+    #game-section {
+        min-width: unset;
+    }
+    #monkey {
+        font-size: 40px;
+        left: 30px;
+    }
+    .obstacle {
+        font-size: 35px;
+    }
+    #monkey.jump {
+        bottom: 100px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+    input {
+        padding: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🐵 Monkey's Jump 3D</h1>
+
+<div id="app-container">
+
+    <!-- Game Section -->
+    <div id="game-section" class="section">
+        <h2>Le Jeu du Singe Sauteur</h2>
+        <div id="gameArea">
+            <div id="mountains" class="landscape-layer"></div>
+            <div id="trees" class="landscape-layer"></div>
+            <div id="road"></div>
+            <div id="monkey">🐵</div>
+        </div>
+
+        <h2>Multiplicateur : <span id="multiplier">1.00</span>x</h2>
+
+        <input id="bet" type="number" value="50" min="10" placeholder="Mise (CFA)">
+        <br>
+
+        <div class="game-controls">
+            <button onclick="startGame()">Miser & Jouer</button>
+            <button class="secondary" onclick="cashOut()">Encaisser</button>
+        </div>
+
+        <h3>Solde : <span id="balance">0</span> CFA</h3>
+        <h3 id="message"></h3>
+    </div>
+
+    <!-- Transaction Section -->
+    <div id="transaction-section" class="section">
+        <h2>Transactions</h2>
+
+        <!-- Deposit Form -->
+        <div class="transaction-form">
+            <h3>Dépôt d'argent</h3>
+            <input type="text" id="depositPhoneNumber" placeholder="Numéro de téléphone (e.g., 771234567)">
+            <input type="number" id="depositAmount" value="500" min="100" placeholder="Montant du dépôt (CFA)">
+            <button onclick="requestDeposit()">Déposer</button>
+        </div>
+
+        <!-- Withdrawal Form -->
+        <div class="transaction-form">
+            <h3>Retrait d'argent</h3>
+            <input type="text" id="withdrawalPhoneNumber" placeholder="Numéro de téléphone (e.g., 771234567)">
+            <input type="number" id="withdrawalAmount" value="500" min="100" placeholder="Montant du retrait (CFA)">
+            <select id="withdrawalMethod">
+                <option value="wave">Wave Money</option>
+                <option value="orangeMoney">Orange Money</option>
+                <option value="freeMoney">Free Money</option>
+                <option value="wizall">Wizall Money</option>
+            </select>
+            <button class="secondary" onclick="requestWithdrawal()">Retirer</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- Game Variables ---
+let balance = 0; // Will be fetched from server or initialized
+let multiplier = 1;
+let gameRunning = false;
+let bet = 0;
+let gameLoopInterval;
+let obstacleSpawnInterval;
+let isJumping = false;
+const MONKEY_JUMP_HEIGHT = 80; // Pixels from road to peak of jump
+const MONKEY_ON_ROAD_BOTTOM = 40; // Pixels from gameArea bottom to monkey's feet
+const MONKEY_LEFT_POSITION = 50; // Pixels from gameArea left to monkey
+
+// --- DOM Elements ---
+const balanceSpan = document.getElementById("balance");
+const multiplierSpan = document.getElementById("multiplier");
+const messageH3 = document.getElementById("message");
+const betInput = document.getElementById("bet");
+const monkeyDiv = document.getElementById("monkey");
+const gameArea = document.getElementById("gameArea");
+
+// Transaction Elements
+const depositPhoneNumberInput = document.getElementById("depositPhoneNumber");
+const depositAmountInput = document.getElementById("depositAmount");
+const withdrawalPhoneNumberInput = document.getElementById("withdrawalPhoneNumber");
+const withdrawalAmountInput = document.getElementById("withdrawalAmount");
+const withdrawalMethodSelect = document.getElementById("withdrawalMethod");
+
+// --- Utility Functions ---
+function showMessage(msg, isError = false) {
+    messageH3.innerText = msg;
+    messageH3.style.color = isError ? "var(--secondary-color)" : "var(--primary-color)";
+}
+
+function clearMessage() {
+    messageH3.innerText = "";
+}
+
+// --- Balance Management ---
+async function fetchBalance(phoneNumber) {
+    // In a real app, this would fetch from a /api/balance endpoint
+    // For now, we simulate initial balance for a known user or default
+    if (phoneNumber === "771234567") {
+        return 10000; // Test user balance
+    }
+    if (phoneNumber === "779876543") {
+        return 5000; // Another test user balance
+    }
+    return 1000; // Default for others
+}
+
+async function updateBalanceDisplay(phoneNumber = null) {
+    if (phoneNumber) {
+        // If a specific phone number is provided, fetch its balance
+        balance = await fetchBalance(phoneNumber);
+    }
+    balanceSpan.innerText = balance;
+}
+
+// Initial balance load (can be tied to a default user or login)
+document.addEventListener("DOMContentLoaded", () => {
+    // For demonstration, let's assume a default phone number or prompt
+    // For a real app, this would be retrieved from a session after login
+    // We'll just use the client-side `balance` variable for now and assume
+    // the transaction functions update it based on API responses.
+    updateBalanceDisplay(); // Initialize with client-side balance
+});
+
+
+// --- Game Logic ---
+function startGame() {
+    if (gameRunning) return;
+
+    bet = Number(betInput.value);
+    if (isNaN(bet) || bet <= 0) {
+        showMessage("Veuillez entrer une mise valide.", true);
+        return;
+    }
+
+    if (bet > balance) {
+        showMessage("Solde insuffisant pour cette mise!", true);
+        return;
+    }
+
+    balance -= bet;
+    updateBalanceDisplay();
+    clearMessage();
+
+    multiplier = 1;
+    gameRunning = true;
+    monkeyDiv.classList.remove('jump'); // Ensure monkey is on ground
+
+    multiplierSpan.innerText = multiplier.toFixed(2);
+
+    gameLoopInterval = setInterval(updateGame, 100);
+    obstacleSpawnInterval = setInterval(createObstacle, 1800 + Math.random() * 500); // Randomize spawn slightly
+}
+
+function updateGame() {
+    multiplier += 0.03; // Increase multiplier slightly slower
+    multiplierSpan.innerText = multiplier.toFixed(2);
+}
+
+function createObstacle() {
+    if (!gameRunning) return;
+
+    let obstacle = document.createElement("div");
+    obstacle.classList.add("obstacle");
+    const obstacles = ["🚗", "🚌", "🚚", "🚧", "🪨"];
+    obstacle.innerText = obstacles[Math.floor(Math.random() * obstacles.length)];
+    gameArea.appendChild(obstacle);
+
+    let currentRight = -60; // Start off-screen to the right
+    let obstacleMoveInterval = setInterval(() => {
+        currentRight += 5; // Move speed
+        obstacle.style.right = currentRight + "px";
+
+        // Collision detection
+        if (currentRight > (gameArea.offsetWidth - MONKEY_LEFT_POSITION - 50) &&
+            currentRight < (gameArea.offsetWidth - MONKEY_LEFT_POSITION + 20) && // Obstacle is near monkey
+            !isJumping // Monkey is on the ground
+        ) {
+            crash();
+            clearInterval(obstacleMoveInterval);
+        }
+
+        if (currentRight > gameArea.offsetWidth + 50) { // Obstacle off-screen to the left
+            obstacle.remove();
+            clearInterval(obstacleMoveInterval);
+        }
+    }, 30);
+}
+
+function jump() {
+    if (!gameRunning || isJumping) return;
+
+    isJumping = true;
+    monkeyDiv.classList.add('jump');
+
+    setTimeout(() => {
+        monkeyDiv.classList.remove('jump');
+        isJumping = false;
+    }, 300); // Duration of the jump animation (0.15s up, 0.15s down)
+}
+
+// Listen for spacebar to jump
+document.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') {
+        event.preventDefault(); // Prevent page scrolling
+        jump();
+    }
+});
+
+function crash() {
+    if (!gameRunning) return; // Prevent multiple crashes
+
+    endGame();
+    showMessage("💥 Crash ! Le singe a été percuté.", true);
+}
+
+function cashOut() {
+    if (!gameRunning) {
+        showMessage("Aucune partie en cours à encaisser.", true);
+        return;
+    }
+
+    endGame();
+
+    let win = bet * multiplier;
+    balance += Math.floor(win);
+    updateBalanceDisplay();
+    showMessage(`🎉 Gain : ${Math.floor(win)} CFA ! Nouveau solde: ${balance} CFA`);
+}
+
+function endGame() {
+    gameRunning = false;
+    clearInterval(gameLoopInterval);
+    clearInterval(obstacleSpawnInterval);
+
+    // Remove all obstacles
+    document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+}
+
+// --- Transaction Handlers (Client-side API calls) ---
+
+async function requestDeposit() {
+    const phoneNumber = depositPhoneNumberInput.value;
+    const amount = Number(depositAmountInput.value);
+
+    if (!phoneNumber || phoneNumber.length < 9 || isNaN(amount) || amount <= 0) {
+        showMessage("Veuillez entrer un numéro de téléphone et un montant valides pour le dépôt.", true);
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/deposit", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ phoneNumber, amount }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`Dépôt réussi: ${data.Message}`);
+            balance = data.NewBalance || balance; // Update client balance from server response
+            updateBalanceDisplay();
+        } else {
+            showMessage(`Erreur de dépôt: ${data.Message}`, true);
+        }
+    } catch (error) {
+        console.error("Error during deposit request:", error);
+        showMessage("Erreur de connexion au serveur pour le dépôt.", true);
+    }
+}
+
+async function requestWithdrawal() {
+    const phoneNumber = withdrawalPhoneNumberInput.value;
+    const amount = Number(withdrawalAmountInput.value);
+    const method = withdrawalMethodSelect.value;
+
+    if (!phoneNumber || phoneNumber.length < 9 || isNaN(amount) || amount <= 0 || !method) {
+        showMessage("Veuillez entrer un numéro de téléphone, un montant et une méthode valides pour le retrait.", true);
+        return;
+    }
+
+    // Client-side check (can be bypassed if server allows)
+    if (amount > balance) {
+        showMessage("Solde insuffisant pour ce retrait.", true);
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/withdraw", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ phoneNumber, amount, method }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`Retrait réussi: ${data.Message}`);
+            balance = data.NewBalance || balance; // Update client balance from server response
+            updateBalanceDisplay();
+        } else {
+            showMessage(`Erreur de retrait: ${data.Message}`, true);
+        }
+    } catch (error) {
+        console.error("Error during withdrawal request:", error);
+        showMessage("Erreur de connexion au serveur pour le retrait.", true);
+    }
+}
+
+// Initial balance fetch for a default user (you might want to integrate this with a login system)
+async function initializeUserBalance() {
+    // For demonstration, use a default phone number to fetch initial balance.
+    // In a real application, this phone number would come from user session/login.
+    const defaultUserPhoneNumber = "771234567"; // Example test user
+    try {
+        // Attempt a dummy deposit/withdrawal to implicitly create user if not exists and get balance
+        // Or create a dedicated /api/balance endpoint in Go server
+        const response = await fetch("/api/deposit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phoneNumber: defaultUserPhoneNumber, amount: 0 }) // Deposit 0 to get current balance
+        });
+        const data = await response.json();
+        if (response.ok) {
+            balance = data.NewBalance;
+            updateBalanceDisplay();
+        } else {
+            console.warn("Could not get initial balance, defaulting to 1000:", data.Message);
+            balance = 1000;
+            updateBalanceDisplay();
+        }
+    } catch (error) {
+        console.error("Failed to fetch initial balance, defaulting to 1000:", error);
+        balance = 1000;
+        updateBalanceDisplay();
+    }
+}
+
+initializeUserBalance(); // Call on page load
+
+</script>
+
+</body>
+</html>
