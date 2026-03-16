@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey's Jump Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #gameCanvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <h1>Monkey's Jump Game</h1>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let monkey = { x: 50, y: 300, width: 50, height: 50, jumpHeight: 100, isJumping: false };
+        let obstacles = []; 
+        let score = 0;
+        let bet = 0;
+        let multiplier = 1;
+        let fps = 60;
+
+        function init() {
+            document.addEventListener('keydown', handleKeyDown);
+            setInterval(gameLoop, 1000 / fps);
+            setInterval(() => { 
+                obstacles.push({ x: canvas.width, y: canvas.height - 50, width: 30, height: 50 }); 
+            }, 2000);
+        }
+
+        function handleKeyDown(event) {
+            if (event.code === 'Space' && !monkey.isJumping) {
+                monkey.isJumping = true;
+                monkey.y -= monkey.jumpHeight;
+                setTimeout(() => { monkey.isJumping = false; monkey.y += monkey.jumpHeight; }, 500);
+            }
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMonkey();
+            drawObstacles();
+            checkCollision();
+            updateScore();
+        }
+
+        function drawMonkey() {
+            ctx.fillStyle = 'brown';
+            ctx.fillRect(monkey.x, monkey.y, monkey.width, monkey.height);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obstacle => {
+                obstacle.x -= 5; // Move obstacle left
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
+
+        function checkCollision() {
+            obstacles.forEach(obstacle => {
+                if (monkey.x < obstacle.x + obstacle.width &&  
+                    monkey.x + monkey.width > obstacle.x &&  
+                    monkey.y < obstacle.y + obstacle.height &&  
+                    monkey.y + monkey.height > obstacle.y) { 
+                    alert('Game Over! Your score: ' + score);
+                    resetGame();
+                }
+            });
+        }
+
+        function updateScore() {
+            score += multiplier;  
+            ctx.fillStyle = 'black';  
+            ctx.fillText('Score: ' + score, 10, 20);
+        }
+
+        function resetGame() {
+            score = 0;
+            obstacles = [];
+            monkey = { x: 50, y: 300, width: 50, height: 50, jumpHeight: 100, isJumping: false };
+        }
+
+        init();
+    </script>
+</body>
+</html>
